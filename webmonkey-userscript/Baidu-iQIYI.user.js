@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         Baidu iQIYI
 // @description  Watch videos in external player.
-// @version      1.0.0
+// @version      2.0.0
 // @match        *://*.iq.com/play/*
 // @icon         https://www.iq.com/favicon.ico
 // @run-at       document-end
 // @grant        unsafeWindow
+// @grant        GM_download
 // @grant        GM_startIntent
 // @homepage     https://github.com/warren-bank/crx-Baidu-iQIYI/tree/webmonkey-userscript/es5
 // @supportURL   https://github.com/warren-bank/crx-Baidu-iQIYI/issues
@@ -23,6 +24,8 @@ var user_options = {
     "caption_language": "English"
   },
   "webmonkey": {
+    "hls_manifest_file_directory":  "/storage/emulated/0/Download",
+    "hls_manifest_file_name":       "Baidu-iQIYI.m3u8",
     "post_intent_redirect_to_url":  "about:blank"
   },
   "greasemonkey": {
@@ -329,8 +332,37 @@ var inspect_video_dom_scripts = function() {
   if (!video_url) {
     match = regex.hls_manifest.exec(script)
     if (match) {
-      video_url  = 'https://httpbun.com/mix/s=200/h=' + encodeURIComponent('content-type:application/x-mpegurl') + '/b64=' + encodeURIComponent(btoa(JSON.parse('"' + match[1] + '"'))) + '#video.m3u8'
-      video_type = 'application/x-mpegurl'
+      if (typeof GM_startIntent === 'function') {
+        /* methodology for WebMonkey:
+             1. encode HLS manifest to Uint8Array
+             2. save to user-configured absolute path in Android file system
+             3. start Intent to read HLS manifest from saved file
+        */
+
+        unsafeWindow.alert('Please save HLS manifest file to path:\n\n' + user_options.webmonkey.hls_manifest_file_directory + '/' + user_options.webmonkey.hls_manifest_file_name)
+
+        GM_download({
+          url:  (new TextEncoder()).encode(JSON.parse('"' + match[1] + '"')),
+          name: user_options.webmonkey.hls_manifest_file_name
+        })
+
+        if (unsafeWindow.confirm('HLS manifest file is saved?')) {
+          video_url  = 'file://' + user_options.webmonkey.hls_manifest_file_directory + '/' + user_options.webmonkey.hls_manifest_file_name
+          video_type = 'application/x-mpegurl'
+        }
+      }
+      else if (user_options.greasemonkey.redirect_to_webcast_reloaded) {
+        /* methodology for WebCast-Reloaded website:
+             1. encode HLS manifest to Base64
+             2. construct URL to public API endpoint that accepts input parameters to echo in HTTP response:
+                  * HLS MIME type => response 'content-type' header
+                  * Base64 encoded HLS manifest => response body
+             3. start Intent to read HLS manifest from URL to public API endpoint
+        */
+
+        video_type = 'application/x-mpegurl'
+        video_url  = 'https://httpbun.com/mix/s=200/h=' + encodeURIComponent('content-type:' + video_type) + '/b64=' + encodeURIComponent(btoa(JSON.parse('"' + match[1] + '"'))) + '/end/video.m3u8'
+      }
     }
   }
   if (!video_url)
