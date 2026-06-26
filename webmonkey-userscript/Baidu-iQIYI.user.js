@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Baidu iQIYI
 // @description  Watch videos in external player.
-// @version      2.0.0
+// @version      2.0.1
 // @match        *://*.iq.com/play/*
 // @icon         https://www.iq.com/favicon.ico
 // @run-at       document-end
@@ -339,7 +339,7 @@ var inspect_video_dom_scripts = function() {
              3. start Intent to read HLS manifest from saved file
         */
 
-        unsafeWindow.alert('Please save HLS manifest file to path:\n\n' + user_options.webmonkey.hls_manifest_file_directory + '/' + user_options.webmonkey.hls_manifest_file_name)
+        unsafeWindow.alert('Please save HLS manifest file to path:\n\n' + user_options.webmonkey.hls_manifest_file_directory + '/' + user_options.webmonkey.hls_manifest_file_name + '\n\nReminder: if this file already exists, you must double click on the existing file before clicking "Save" to overwrite.')
 
         GM_download({
           url:  (new TextEncoder()).encode(JSON.parse('"' + match[1] + '"')),
